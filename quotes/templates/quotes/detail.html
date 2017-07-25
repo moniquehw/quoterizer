@@ -1,11 +1,13 @@
-<h1>{{ question.question_text }}</h1>
+<html>
+<body>
+<h1>{{ quote.title }}</h1>
 
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'quote:vote' quote.id %}" method="post">
-{% csrf_token %}
-{% for choice in question.choice_set.all %}
-    <input type="radio" name="LineItem" id="LineItem{{ forloop.counter }}" value="{{ LineItem.id }}" />
+<ul>
+{% for lineitem in quote.choice_set.all %}
+    <li id="LineItem{{ forloop.counter }}">{{ lineitem.id }}"</li>
 {% endfor %}
-<input type="submit" value="Vote" />
-</form>
+</ul>
+</body>
+</html>

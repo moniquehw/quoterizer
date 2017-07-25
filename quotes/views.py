@@ -21,9 +21,3 @@ class IndexView(generic.ListView):
 class DetailView(generic.DetailView):
     model = Quote
     template_name = 'quotes/detail.html'
-
-    def get_queryset(self):
-        """
-        Excludes any questions that aren't published yet.
-        """
-        return Quote.objects.filter(created=timezone.now())

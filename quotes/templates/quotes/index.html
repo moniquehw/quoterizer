@@ -1,5 +1,6 @@
 {% load static %}
-
+<html>
+<body>
 <link rel="stylesheet" type="text/css" href="{% static 'quotes/style.css' %}" />
 
 {% if quote_list %}
@@ -11,3 +12,5 @@
 {% else %}
     <p>No quotes created</p>
 {% endif %}
+</body>
+</html>
