@@ -1,0 +1,13 @@
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'quotes/style.css' %}" />
+
+{% if quote_list %}
+    <ul>
+    {% for quote in quote_list %}
+    <li><a href="{% url 'quotes:detail' quote.id %}">{{ quote.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No quotes created</p>
+{% endif %}

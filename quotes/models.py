@@ -9,13 +9,13 @@ class Quote(models.Model):
     def __str__(self):
         return self.title
 
-    def save(self, *arg, **kwargs):
+    def save(self, *args, **kwargs):
         """ On save, update created timestamp
 
         """
         if not self.id:
             self.created = timezone.now()
-        return super(Quote).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class LineItem(models.Model):
