@@ -6,7 +6,7 @@ class Quote(models.Model):
     address = models.CharField(max_length=500, blank=True)
     created = models.DateTimeField('Date created', editable=False)
     sent = models.BooleanField('Has been sent')
-    #sdate = models.DateTimeField('Date sent', editable=False)
+    #sent_date = models.DateTimeField('Date sent', editable=False)
 
     def __str__(self):
         return self.client
@@ -17,11 +17,6 @@ class Quote(models.Model):
         """
         if not self.id:
             self.created = timezone.now()
-        return super().save(*args, **kwargs)
-
-    def sent_date(self):
-        if self.sent:
-            self.sdate = timezone.now()
         return super().save(*args, **kwargs)
 
 
