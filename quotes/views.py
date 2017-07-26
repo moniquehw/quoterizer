@@ -9,6 +9,7 @@ from .models import Quote
 class IndexView(generic.ListView):
     template_name = 'quotes/index.html'
     context_object_name = 'quote_list'
+    sent = Quote.sent
 
     def get_queryset(self):
         """

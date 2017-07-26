@@ -1,0 +1,18 @@
+{% load static %}
+<html>
+<body>
+<link rel="stylesheet" type="text/css" href="{% static 'quotes/style.css' %}" />
+
+{% if quote_list %}
+  <ul>
+    {% for quote in quote_list %}
+      {% if not quote.sent %}
+        <li><a href="{% url 'quotes:detail' quote.id %}">{{ quote.client }}</a></li>
+      {% endif %}
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No quotes created</p>
+{% endif %}
+</body>
+</html>

@@ -7,6 +7,7 @@
 {% if quote_list %}
     <p>Sent</p>
     <ul>
+      <p>{{ quote.created }}</p>
 
         {% for quote in quote_list %}
           {% if quote.sent %}
