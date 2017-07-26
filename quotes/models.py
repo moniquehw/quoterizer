@@ -6,7 +6,7 @@ class Quote(models.Model):
     address = models.CharField(max_length=500, blank=True)
     created = models.DateTimeField('Date created', editable=False)
     sent = models.BooleanField('Has been sent')
-    #sent_date = models.DateTimeField('Date sent', editable=False)
+    sent_date = models.DateTimeField('Date sent', editable=False, null=True)
 
     def __str__(self):
         return self.client

@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import generic
@@ -22,3 +23,8 @@ class IndexView(generic.ListView):
 class DetailView(generic.DetailView):
     model = Quote
     template_name = 'quotes/detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total'] = self.object.lineitem_set.aggregate(Sum('amount'))['amount__sum']
+        return context

@@ -1,14 +1,15 @@
+<!DOCTYPE html>
 <html>
 <body>
 <h1>{{ quote.client }}</h1>
 <p>{{ quote.address}}</p>
-
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 <ul>
 {% for lineitem in quote.lineitem_set.all %}
     <li id="LineItem{{ forloop.counter }}">{{ lineitem.description }} {{ lineitem.amount }}</li>
 {% endfor %}
+<li>Total: {{ total }}</li>
 </ul>
 </body>
 </html>
