@@ -5,22 +5,25 @@
 <h2>Quotes</h2>
 
 {% if quote_list %}
-    <p>Sent</p>
-    <ul>
-
-        {% for quote in quote_list %}
-          {% if quote.sent %}
-            <li><a href="{% url 'quotes:detail' quote.id %}">{{ quote.client }}</a></li>
-
-        {% endif %}
-        {% endfor %}
-    </ul>
     <p>Not Sent</p>
     <ul>
 
       {% for quote in quote_list %}
         {% if not quote.sent %}
           <li><a href="{% url 'quotes:detail' quote.id %}">{{ quote.client }}</a></li>
+      {% endif %}
+      {% endfor %}
+  </ul>
+
+  <p>Sent</p>
+  <ul>
+
+      {% for quote in quote_list %}
+        {% if quote.sent %}
+          <li><a href="{% url 'quotes:detail' quote.id %}">{{ quote.client }}</a></li>
+
+          {{ TimeStampedModel.modified }}
+
       {% endif %}
       {% endfor %}
   </ul>
