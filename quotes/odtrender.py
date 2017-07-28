@@ -3,36 +3,38 @@ import uno
 import os
 from com.sun.star.text.ControlCharacter import PARAGRAPH_BREAK
 from com.sun.star.awt import Size
+from django.db.models import Sum
+from . import views
 
-#For table:
-#Item, Cost (excl vat) in 'currency' as headers
-#line items, total
-#subtotal, total so far
-#project management fee, % of subtotal
-#Vat (will say 'not applicable' if vat is not ticked), vat amount
-#total, total
+#2 decimal places for everything
+#align right
+#make left column bigger
 
 
 # V2 - make it optional whether days or hoursin amount
 # download odt button
 # save to pdf button
+#choose from existing customers or add new
 
 class QuoteRenderer:
 
     def __init__(self, quote):
-        p2 = subprocess.Popen(("soffice", "--writer", '--accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"', "--headless"))
+        #p2 = subprocess.Popen(("soffice", "--writer", '--accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"', "--headless"))
         self.quote = quote
 
     def render(self):
         self.connect()
 
-        client = 'stop not working'
-        print ('stop not working')
-        self.find_replace("{{client}}", client) #self.quote.client
+        self.find_replace("{{client}}", self.quote.client) #
         self.find_replace("{{title}}", self.quote.title)
-        subtotal = self.object.lineitem_set.aggregate(Sum('amount'))['amount__sum']
 
-        insert_quote_table(self, self.quote.lineitem_set, self.quote.title, subtotal) #TODO: add line items and total amount as proper args
+        subtotal = self.quote.lineitem_set.aggregate(Sum('amount'))['amount__sum']
+
+        print (self.quote.currency)
+        #for item in self.quote.lineitem_set.all():
+        #    print (item.description, item.amount, item.quote, item.quote_id)
+
+        self.insert_quote_table(self.quote.lineitem_set.all(), self.quote.title, subtotal) #TODO: add line items and total amount as proper args
 
         if self.quote.conditions == 'Catalyst Standard Terms':
             text = "This quote is proposed under the assumption that both parties accept and agree that the scope, services and standards of quality for the project are accepted. Parties acknowledge and accept Catalyst's standard Terms and Conditions[1] (http://catalyst-eu.net/terms), notes, obligations and assumptions."
@@ -45,11 +47,11 @@ class QuoteRenderer:
     def insert_quote_table(self, line_items, title, total_amount):
         grey = 0xCCCCCC
 
-        if quote.currency == 'GBP':
+        if self.quote.currency == 'GBP':
             symbol = '£'
-        elif quote.currency == 'EUR':
+        elif self.quote.currency == 'EUR':
             symbol = '€'
-        elif quote.currency == 'USD':
+        elif self.quote.currency == 'USD':
             symbol = '$'
         else:
             symbol = 'currency symbol is broken'
@@ -62,48 +64,58 @@ class QuoteRenderer:
         header_row.setPropertyValue( "BackColor", grey)
 
         self.set_table_cell(table, "A1", 'Item', {"ParaStyleName": "Catalyst - Table header"})
-        self.set_table_cell(table, "B1", 'Cost ({}) (exc VAT)'.format(self.quote.currency), {"ParaStyleName": "Catalyst - Table header"})
+        self.set_table_cell(table, "B1", 'Cost exc VAT (in {})'.format(self.quote.currency), {"ParaStyleName": "Catalyst - Table header"})
+
+        #for item in self.quote.lineitem_set.all():
+        #    print (item.description, item.amount, item.quote, item.quote_id)
 
         #line items for table
         row = 2
-        for item in item_list:
-            self.set_table_cell(table, "A{}".format(row), self.line.description, {"ParaStyleName": "Catalyst - Table contents"})
-            self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, self.line.amount), {"ParaStyleName": "Catalyst - Table contents"})
+        for item in line_items:
+            self.set_table_cell(table, "A{}".format(row), item.description, {"ParaStyleName": "Catalyst - Table contents"})
+            self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, total_amount), {"ParaStyleName": "Catalyst - Table contents"})
             row += 1
 
         #subtotal
         new_row = table_rows.getByIndex(row - 1)
         new_row.setPropertyValue("BackColor", grey)
         self.set_table_cell(table, "A{}".format(row), 'Subtotal (exc VAT)', {"ParaStyleName": "Catalyst - Table header"})
-        self.set_table_cell(table, "B{}".format(row), "{}{}".format (symbol, total_amount), {"ParaStyleName": "Catalyst - Table header"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format (symbol, total_amount), {"ParaStyleName": "Catalyst - Table header"}
+        )
+        row += 1
 
-        percent = self.quote.pm*100
-        project_management = self.line.amount*percent
+        print (self.quote.pm)
+        percent = self.quote.pm/100
+        print (percent)
+        project_management = total_amount*percent
 
         #project management line
         new_row = table_rows.getByIndex(row - 1)
         self.set_table_cell(table, "A{}".format(row), 'Project Management Fee {}%'.format(self.quote.pm), {"ParaStyleName": "Catalyst - Table contents"})
-        self.set_table_cell(table, "B{}".format(row), project_management, {"ParaStyleName": "Catalyst - Table contents"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, project_management), {"ParaStyleName": "Catalyst - Table contents"})
+        row += 1
 
         #VAT line
-        if self.line.vat:
+        if self.quote.vat:
             vat_line = 'VAT (20%)'
-            VAT = line.amount + project_management
+            print (total_amount, project_management)
+            VAT = (total_amount + project_management)*0.20
         else:
             vat_line = 'VAT (not applicable)'
             VAT = 0
 
         new_row = table_rows.getByIndex(row - 1)
         self.set_table_cell(table, "A{}".format(row), vat_line, {"ParaStyleName": "Catalyst - Table contents"})
-        self.set_table_cell(table, "B{}".format(row), VAT, {"ParaStyleName": "Catalyst - Table contents"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, VAT), {"ParaStyleName": "Catalyst - Table contents"})
+        row += 1
 
-        total = subtotal + project_management + VAT
+        total = total_amount + project_management + VAT
 
         #total line
         new_row = table_rows.getByIndex(row - 1)
         new_row.setPropertyValue("BackColor", grey)
         self.set_table_cell(table, "A{}".format(row), 'Total', {"ParaStyleName": "Catalyst - Table header"})
-        self.set_table_cell(table, "B{}".format(row), total, {"ParaStyleName": "Catalyst - Table header"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, total), {"ParaStyleName": "Catalyst - Table header"})
 
 
     def find_replace(self, search_string, replace_string):
@@ -114,6 +126,14 @@ class QuoteRenderer:
         while find_iter:
             find_iter.String = replace_string
             find_iter = self.document.findNext(find_iter.End, replace_desc)
+
+
+    def set_table_cell(self, table, cell_name, text, properties = {}):
+        table_text = table.getCellByName(cell_name)
+        cursor = table_text.createTextCursor()
+        for p, v in properties.items():
+            cursor.setPropertyValue(p, v)
+        table_text.setString(text)
 
 
     def insert_table_at_end(self, x, y, title=None):
@@ -156,7 +176,8 @@ class QuoteRenderer:
             sys.exit(-1)
         smgr = ctx.ServiceManager
         self.desktop = smgr.createInstanceWithContext( "com.sun.star.frame.Desktop",ctx)
-        self.document = self.desktop.loadComponentFromURL("file:///" + os.getcwd() + "/reporttemplate.odt", "_blank", 0, ())
+        self.document = self.desktop.loadComponentFromURL ("file:///home/monique/projects/quoterizer/template.odt", "_blank", 0, ())
+        #("file:///" + os.getcwd() + "/quoteriser/templates/template.odt", "_blank", 0, ())
 
     def save(self):
         """ Saves the file as a .odt file to the current directory"""

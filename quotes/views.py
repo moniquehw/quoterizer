@@ -40,13 +40,13 @@ def django_file_download_view(request, quote_id):
     # TODO: Render the template to /tmp/somefilename
     # TODO: send sent date on the quote
     quote = Quote.objects.get(pk=quote_id)
+
     renderer = QuoteRenderer(quote)
-    print (quote)
     renderer.render()
     filepath = '/home/monique/projects/quoterizer/template.odt'
     with open(filepath, 'rb') as fp:
         data = fp.read()
-    filename = 'athing.odt'
+    filename = 'quote.odt'
     response = HttpResponse()
     response['Content-Disposition'] = 'attachment; filename=%s' % filename # force browser to download file
     response.write(data)
