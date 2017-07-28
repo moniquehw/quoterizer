@@ -5,10 +5,13 @@ from com.sun.star.text.ControlCharacter import PARAGRAPH_BREAK
 from com.sun.star.awt import Size
 from django.db.models import Sum
 from . import views
+import decimal
+import time
 
 #2 decimal places for everything
 #align right
 #make left column bigger
+#centre totals
 
 
 # V2 - make it optional whether days or hoursin amount
@@ -19,7 +22,11 @@ from . import views
 class QuoteRenderer:
 
     def __init__(self, quote):
-        #p2 = subprocess.Popen(("soffice", "--writer", '--accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"', "--headless"))
+        print("About to open process")
+        self.p2 = subprocess.Popen(("soffice", "--writer", '--accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"', "--headless"))
+        print("process is open, zzz")
+        time.sleep(20)
+        print("Yawn")
         self.quote = quote
 
     def render(self):
@@ -30,19 +37,25 @@ class QuoteRenderer:
 
         subtotal = self.quote.lineitem_set.aggregate(Sum('amount'))['amount__sum']
 
-        print (self.quote.currency)
         #for item in self.quote.lineitem_set.all():
         #    print (item.description, item.amount, item.quote, item.quote_id)
 
-        self.insert_quote_table(self.quote.lineitem_set.all(), self.quote.title, subtotal) #TODO: add line items and total amount as proper args
+        self.insert_quote_table(self.quote.lineitem_set.all(), self.quote.title, subtotal)
 
+        print (self.quote.conditions)
         if self.quote.conditions == 'Catalyst Standard Terms':
-            text = "This quote is proposed under the assumption that both parties accept and agree that the scope, services and standards of quality for the project are accepted. Parties acknowledge and accept Catalyst's standard Terms and Conditions[1] (http://catalyst-eu.net/terms), notes, obligations and assumptions."
+            text1 = "This quote is proposed under the assumption that both parties accept and agree that the scope, services and standards of quality for the project are accepted. Parties acknowledge and accept "
+            link = "http://catalyst-eu.net/terms"
+            linkwords = "Catalyst's standard Terms and Conditions[1]"
+            text2 = ", notes, obligations and assumptions."
         else:
-            text = "This quote is proposed under the assumption that parties accept and agree the scope, services and standards of quality outlined here. Parties acknowledge and accept Catalyst's Digital Marketplace standard Terms and Conditions (https://assets.digitalmarketplace.service.gov.uk/g-cloud-9/documents/579028/520395179658286-terms-and-conditions-2017-04-07-1042.pdf), notes, obligations and assumptions."
-            insert_text(self, text)
+            text1 = "This quote is proposed under the assumption that parties accept and agree the scope, services and standards of quality outlined here. Parties acknowledge and accept "
+            link = "https://assets.digitalmarketplace.service.gov.uk/g-cloud-9/documents/579028/520395179658286-terms-and-conditions-2017-04-07-1042.pdf"
+            linkwords = "Catalyst's Digital Marketplace standard Terms and Conditions"
+            text2 = ", notes, obligations and assumptions."
 
-            self.save()
+        self.insert_hyperlink_text(text1, link, linkwords, text2)
+        self.save()
 
     def insert_quote_table(self, line_items, title, total_amount):
         grey = 0xCCCCCC
@@ -72,15 +85,16 @@ class QuoteRenderer:
         #line items for table
         row = 2
         for item in line_items:
+            amount = round(decimal.Decimal(item.amount), 2)
             self.set_table_cell(table, "A{}".format(row), item.description, {"ParaStyleName": "Catalyst - Table contents"})
-            self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, total_amount), {"ParaStyleName": "Catalyst - Table contents"})
+            self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, amount), {"ParaStyleName": "Catalyst - Table contents"})
             row += 1
 
         #subtotal
         new_row = table_rows.getByIndex(row - 1)
         new_row.setPropertyValue("BackColor", grey)
         self.set_table_cell(table, "A{}".format(row), 'Subtotal (exc VAT)', {"ParaStyleName": "Catalyst - Table header"})
-        self.set_table_cell(table, "B{}".format(row), "{}{}".format (symbol, total_amount), {"ParaStyleName": "Catalyst - Table header"}
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format (symbol, round(decimal.Decimal(total_amount), 2)), {"ParaStyleName": "Catalyst - Table header"}
         )
         row += 1
 
@@ -92,7 +106,7 @@ class QuoteRenderer:
         #project management line
         new_row = table_rows.getByIndex(row - 1)
         self.set_table_cell(table, "A{}".format(row), 'Project Management Fee {}%'.format(self.quote.pm), {"ParaStyleName": "Catalyst - Table contents"})
-        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, project_management), {"ParaStyleName": "Catalyst - Table contents"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, round(decimal.Decimal(project_management), 2)), {"ParaStyleName": "Catalyst - Table contents"})
         row += 1
 
         #VAT line
@@ -106,7 +120,7 @@ class QuoteRenderer:
 
         new_row = table_rows.getByIndex(row - 1)
         self.set_table_cell(table, "A{}".format(row), vat_line, {"ParaStyleName": "Catalyst - Table contents"})
-        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, VAT), {"ParaStyleName": "Catalyst - Table contents"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, round(decimal.Decimal(VAT), 2)), {"ParaStyleName": "Catalyst - Table contents"})
         row += 1
 
         total = total_amount + project_management + VAT
@@ -115,8 +129,11 @@ class QuoteRenderer:
         new_row = table_rows.getByIndex(row - 1)
         new_row.setPropertyValue("BackColor", grey)
         self.set_table_cell(table, "A{}".format(row), 'Total', {"ParaStyleName": "Catalyst - Table header"})
-        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, total), {"ParaStyleName": "Catalyst - Table header"})
+        self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, round(decimal.Decimal(total), 2)), {"ParaStyleName": "Catalyst - Table header"})
 
+        sep = table.TableColumnSeparators
+        sep[0].Position = 6000
+        table.TableColumnSeparators = sep
 
     def find_replace(self, search_string, replace_string):
         replace_desc = self.document.createReplaceDescriptor()
@@ -127,14 +144,12 @@ class QuoteRenderer:
             find_iter.String = replace_string
             find_iter = self.document.findNext(find_iter.End, replace_desc)
 
-
     def set_table_cell(self, table, cell_name, text, properties = {}):
         table_text = table.getCellByName(cell_name)
         cursor = table_text.createTextCursor()
         for p, v in properties.items():
             cursor.setPropertyValue(p, v)
         table_text.setString(text)
-
 
     def insert_table_at_end(self, x, y, title=None):
         text = self.document.Text
@@ -160,7 +175,22 @@ class QuoteRenderer:
         else:
             cursor.ParaStyleName = "Catalyst - Text Body"
         text.insertString(cursor, text_content, 0)
-        text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+        #text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+
+    def insert_hyperlink_text(self, text1, link, linkwords, text2, style=None):
+        text = self.document.Text
+        cursor = text.createTextCursor()
+        cursor.gotoEnd(False)
+        if style is not None:
+            cursor.ParaStyleName = style
+        else:
+            cursor.ParaStyleName = "Catalyst - Text Body"
+
+        new_cursor = text.createTextCursorByRange(cursor)
+        self.insert_text(text1)
+        new_cursor.setString(linkwords)
+        new_cursor.HyperLinkURL = link
+        self.insert_text(text2)
 
     def connect(self):
         localContext = uno.getComponentContext()
@@ -183,7 +213,7 @@ class QuoteRenderer:
         """ Saves the file as a .odt file to the current directory"""
         #filename = "file:///" + os.getcwd() + "/clients/" + self.client.name + "/" + \
         #           self.client.name + "_" + self.client.month_config['config_date'] + ".odt"
-        self.document.storeToURL("file:///tmp/filename.odt", ())
+        self.document.storeToURL("file:///home/monique/projects/quoterizer/quote.odt", ())
         self.document.close(True)
-
+        self.p2.terminate()
         return "/tmp/filename.odt"
