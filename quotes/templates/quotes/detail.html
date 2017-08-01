@@ -13,7 +13,7 @@
 {% for lineitem in quote.lineitem_set.all %}
     <li id="LineItem{{ forloop.counter }}">{{ lineitem.description }} {{ lineitem.amount }}</li>
 {% endfor %}
-<li>Total: {{ total }}</li>
+<li>Total: {{ quote.total_amount }}</li>
 </ul>
 </body>
 </html>

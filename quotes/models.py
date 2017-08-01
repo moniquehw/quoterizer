@@ -1,5 +1,7 @@
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
+
 
 class Quote(models.Model):
     client = models.CharField('Client', max_length=255)
@@ -16,7 +18,6 @@ class Quote(models.Model):
     sent = models.BooleanField('Has been sent', default=False)
     sent_date = models.DateTimeField('Date sent', editable=False, null=True)
 
-
     def __str__(self):
         return self.client
 
@@ -27,6 +28,10 @@ class Quote(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super().save(*args, **kwargs)
+
+    @property
+    def total_amount(self):
+        return self.lineitem_set.aggregate(Sum('amount'))['amount__sum']
 
 
 class LineItem(models.Model):

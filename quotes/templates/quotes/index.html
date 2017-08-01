@@ -6,18 +6,44 @@
 <html>
 <body>
 <link rel="stylesheet" type="text/css" href="{% static 'quotes/style.css' %}" />
+<a href="/admin/quotes/quote/add">Add</a>
 <h2>Quotes</h2>
 
 {% if quote_list %}
     <p>Not Sent</p>
-    <ul>
+    <table>
 
+      <tr>
+        <th>Client</th>
+        <th>Quote Description</th>
+        <th>Total Amount</th>
+        <th>Date Created</th>
+        <th>Download Quote to .odt</th>
+      </tr> 
       {% for quote in quote_list %}
         {% if not quote.sent %}
-          <li><a href="{% url 'quotes:detail' quote.id %}">{{ quote.client }}</a></li>
-      {% endif %}
+
+          <tr>
+            <td>
+              <a href="{% url 'quotes:detail' quote.id %}">{{ quote.client }}</a>
+            </td>
+            <td>
+              {{ quote.title }}
+            </td>
+            <td>
+              {{ quote.total_amount }}
+            </td>
+            <td>
+              {{ quote.created }}
+            </td>
+
+            <td>
+              <a href="/quotes/{{ quote.id }}/download">Download</a>
+            </td>
+          </tr>
+        {% endif %}
       {% endfor %}
-  </ul>
+  </table>
 
   <p>Sent</p>
   <ul>

@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 
 from .models import Quote, LineItem
 
@@ -15,6 +17,9 @@ class QuoteAdmin(admin.ModelAdmin):
         ('Sent',             {'fields': ['sent']})
     ]
     inlines = [QuoteInline]
+
+    def response_add(self, request, obj, post_url_continue=None):
+        return HttpResponseRedirect(reverse("quotes:index"))
 
 
 admin.site.register(Quote, QuoteAdmin)
