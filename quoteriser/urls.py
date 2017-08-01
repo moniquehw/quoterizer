@@ -19,4 +19,7 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^quotes/', include('quotes.urls', namespace="quotes")),
+    url('^', include('django.contrib.auth.urls'))
+#Add Django site authentication urls (for login, logout, password management)
+
 ]
