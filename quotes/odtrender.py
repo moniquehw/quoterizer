@@ -1,4 +1,4 @@
-import subprocess
+#import subprocess
 import uno
 import os
 from com.sun.star.text.ControlCharacter import PARAGRAPH_BREAK
@@ -8,10 +8,23 @@ from . import views
 import decimal
 import time
 
-#2 decimal places for everything
+
+#TODO:
 #align right
-#make left column bigger
+#fix size of columns
 #centre totals
+
+#admin auth
+
+#options: save odt to server, then convert to pdf, then email to joey
+#fix it so it saves the odt then manually convert to pdf
+#https://www.sitekickr.com/snippets/python/send-html-email-attachments
+#https://stackoverflow.com/questions/11921188/how-to-send-email-with-pdf-attachment-in-python
+
+#for auth:
+#start at login page with no access to anything else
+#once logged in, will go to another page - which will be the quotes index (or the appropriate dashboard)
+#user will have no access to anything else
 
 
 # V2 - make it optional whether days or hoursin amount
@@ -19,14 +32,17 @@ import time
 # save to pdf button
 #choose from existing customers or add new
 
+
+# run in seperate terminal: soffice --writer --accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"
+
 class QuoteRenderer:
 
     def __init__(self, quote):
-        print("About to open process")
-        self.p2 = subprocess.Popen(("soffice", "--writer", '--accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"', "--headless"))
-        print("process is open, zzz")
-        time.sleep(20)
-        print("Yawn")
+        #print("About to open process")
+        # self.p2 = subprocess.Popen(("soffice", "--writer", '--accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"', "--headless"))
+        #print("process is open, zzz")
+        #time.sleep(20)
+        #print("Yawn")
         self.quote = quote
 
     def render(self):
@@ -34,6 +50,11 @@ class QuoteRenderer:
 
         self.find_replace("{{client}}", self.quote.client) #
         self.find_replace("{{title}}", self.quote.title)
+        self.find_replace("{{text}}", self.quote.intro_text)
+        if self.quote.address_2:
+            self.find_replace("{{address_1}}", self.quote.address_1 + "\n" + self.quote.address_2)
+        else:
+            self.find_replace("{{address_1}}", self.quote.address_1)
 
         subtotal = self.quote.lineitem_set.aggregate(Sum('amount'))['amount__sum']
 
@@ -46,7 +67,7 @@ class QuoteRenderer:
         if self.quote.conditions == 'Catalyst Standard Terms':
             text1 = "This quote is proposed under the assumption that both parties accept and agree that the scope, services and standards of quality for the project are accepted. Parties acknowledge and accept "
             link = "http://catalyst-eu.net/terms"
-            linkwords = "Catalyst's standard Terms and Conditions[1]"
+            linkwords = "Catalyst's standard Terms and Conditions"
             text2 = ", notes, obligations and assumptions."
         else:
             text1 = "This quote is proposed under the assumption that parties accept and agree the scope, services and standards of quality outlined here. Parties acknowledge and accept "
@@ -77,7 +98,7 @@ class QuoteRenderer:
         header_row.setPropertyValue( "BackColor", grey)
 
         self.set_table_cell(table, "A1", 'Item', {"ParaStyleName": "Catalyst - Table header"})
-        self.set_table_cell(table, "B1", 'Cost exc VAT (in {})'.format(self.quote.currency), {"ParaStyleName": "Catalyst - Table header"})
+        self.set_table_cell(table, "B1", 'Cost exc VAT ({})'.format(self.quote.currency), {"ParaStyleName": "Catalyst - Table header"})
 
         #for item in self.quote.lineitem_set.all():
         #    print (item.description, item.amount, item.quote, item.quote_id)
@@ -132,7 +153,7 @@ class QuoteRenderer:
         self.set_table_cell(table, "B{}".format(row), "{}{}".format(symbol, round(decimal.Decimal(total), 2)), {"ParaStyleName": "Catalyst - Table header"})
 
         sep = table.TableColumnSeparators
-        sep[0].Position = 6000
+        sep[0].Position = 7000
         table.TableColumnSeparators = sep
 
     def find_replace(self, search_string, replace_string):
@@ -215,5 +236,5 @@ class QuoteRenderer:
         #           self.client.name + "_" + self.client.month_config['config_date'] + ".odt"
         self.document.storeToURL("file:///home/monique/projects/quoterizer/quote.odt", ())
         self.document.close(True)
-        self.p2.terminate()
+        # self.p2.terminate()
         return "/tmp/filename.odt"

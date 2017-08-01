@@ -3,8 +3,10 @@ from django.utils import timezone
 
 class Quote(models.Model):
     client = models.CharField('Client', max_length=255)
-    address = models.CharField(max_length=500, blank=True)
+    address_1 = models.CharField(max_length=500, blank=True)
+    address_2 = models.CharField(max_length=500, blank=True)
     title = models.CharField('Title', max_length=300, blank=False)
+    intro_text = models.CharField('Introduction Text', max_length = 500, blank=False, default='text')
     pm = models.IntegerField('Project Manager Percentage', default=15)
     conditions = models.CharField(max_length=250, choices=[('Catalyst Standard Terms', 'Catalyst Standard Terms'), ('G-Cloud Terms', 'G-Cloud Terms')], default='Catalyst Standard Terms')
     vat = models.BooleanField('VAT (20%)', default=True)

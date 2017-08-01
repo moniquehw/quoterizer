@@ -9,9 +9,10 @@ class QuoteInline(admin.TabularInline):
 
 class QuoteAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['client', 'address', 'title']}),
+        (None,               {'fields': ['client', 'address_1', 'address_2', 'title']}),
+        ('Introduction Text',{'fields': ['intro_text']}),
         ('Details',          {'fields': ['pm', 'vat', 'currency', 'conditions']}),
-        ('Sent',             {'fields': ['sent']}),
+        ('Sent',             {'fields': ['sent']})
     ]
     inlines = [QuoteInline]
 
